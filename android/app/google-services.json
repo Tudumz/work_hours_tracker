@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "918624153266",
+    "project_id": "my-wh-project-2025",
+    "storage_bucket": "my-wh-project-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:918624153266:android:1c805f9afe4a23ae4263ab",
+        "android_client_info": {
+          "package_name": "com.example.work_hours_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBW0fX-a2p0l5_CP1xjbHkQOAjVLZJjB0k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
