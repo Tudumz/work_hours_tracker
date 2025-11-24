@@ -1,44 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../services/firestore.dart';
 import 'dart:developer';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenShow();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  // current date
-  DateTime _focusedDay = DateTime.now();
-  // chosen day. can be null
-  DateTime? _selectedDay = DateTime.now();
+class _HomeScreenShow extends State<HomeScreen> {
+  DateTime today = DateTime.now();
+  DateTime? selectedday = DateTime.now();
+  //can be null
 
-  final TextEditingController _hoursController = TextEditingController();
-  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController hourseinput = TextEditingController();
+  final TextEditingController comm = TextEditingController();
 
   void _showAddShiftDialog() {
-    _hoursController.clear();
-    _commentController.clear();
+    hourseinput.clear();
+    comm.clear();
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Смена на ${_selectedDay.toString().split(' ')[0]}'),
+          title: Text('Смена на ${selectedday.toString().split(' ')[0]}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // hours input
               TextField(
-                controller: _hoursController,
+                controller: hourseinput,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
 
                 decoration: const InputDecoration(
                   labelText: 'Часы',
-                  hintText: 'Например: 8.5',
+                  hintText: '8.5',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.access_time),
                 ),
@@ -46,9 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               // comment input
               TextField(
-                controller: _commentController,
+                controller: comm,
                 decoration: const InputDecoration(
-                  labelText: 'Комментарий (опционально)',
+                  labelText: 'Комментарий',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.comment),
                 ),
@@ -56,18 +57,35 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           actions: [
-            // cencel button
+            // cancel button
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Отмена'),
             ),
 
             ElevatedButton(
-              onPressed: () {
-                log(
-                  'Сохраняем: ${_hoursController.text} часов. Коммент: ${_commentController.text}',
-                );
-                Navigator.pop(context);
+              onPressed: () async {
+                if (hourseinput.text.isEmpty) return;
+
+                final hours =
+                    double.tryParse(hourseinput.text.replaceAll(',', '.')) ??
+                    0.0;
+
+                try {
+                  if (selectedday != null) {
+                    await FirestoreService().addWorkLog(
+                      selectedday!,
+                      hours,
+                      comm.text,
+                    );
+                    log('Успешно сохранено в Firebase!');
+                  }
+                } catch (e) {
+                  log('Ошибка при сохранении в Firebase: $e');
+                }
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
               },
               child: const Text('Сохранить'),
             ),
@@ -79,9 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    // Важно! Удаляем контроллеры, когда экран закрывается, чтобы не забивать память
-    _hoursController.dispose();
-    _commentController.dispose();
+    hourseinput.dispose();
+    comm.dispose();
     super.dispose();
   }
 
@@ -98,37 +115,28 @@ class _HomeScreenState extends State<HomeScreen> {
             // always
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
+            focusedDay: today,
 
             //style
             // Стиль календаря
             calendarFormat: CalendarFormat.month,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              if (!isSameDay(_selectedDay, selectedDay)) {
+            selectedDayPredicate: (day) => isSameDay(selectedday, day),
+            onDaySelected: (chosenday, focusedDay) {
+              if (!isSameDay(selectedday, chosenday)) {
                 setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
+                  selectedday = chosenday;
+                  today = focusedDay;
                 });
               }
             },
 
             headerStyle: const HeaderStyle(
-              // change format button
               formatButtonVisible: false,
               titleCentered: true,
             ),
           ),
 
           const SizedBox(height: 20),
-
-          // test
-          /*Text(
-            _selectedDay != null
-              ? "Выбрано: ${_selectedDay.toString().split(' ')[0]}"
-                : "Выберите дату",
-            style: const TextStyle(fontSize: 18),
-          ),*/
         ],
       ),
       floatingActionButton: FloatingActionButton(

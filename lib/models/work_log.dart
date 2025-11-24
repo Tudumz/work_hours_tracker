@@ -11,7 +11,6 @@ class WorkLog {
     this.comment,
   });
 
-  // Превращение в набор ключей и значений для отправки в Firebase
   Map<String, dynamic> toMap() {
     return {
       'date': date.millisecondsSinceEpoch,
@@ -20,7 +19,6 @@ class WorkLog {
     };
   }
 
-  // Создание объекта WorkLog из данных, из Firebase
   factory WorkLog.fromMap(String id, Map<String, dynamic> map) {
     return WorkLog(
       id: id,
