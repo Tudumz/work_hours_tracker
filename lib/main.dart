@@ -3,6 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'views/home_screen.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'services/firestore.dart';
+import 'BLoC/bloc.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
