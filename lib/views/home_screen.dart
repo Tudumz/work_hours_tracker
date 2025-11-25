@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/firestore.dart';
+import '../models/work_log.dart';
 import 'dart:developer';
 
 class HomeScreen extends StatefulWidget {
@@ -13,8 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenShow extends State<HomeScreen> {
   DateTime today = DateTime.now();
   DateTime? selectedday = DateTime.now();
-  //can be null
-
+  final FirestoreService firestore_serv = FirestoreService();
   final TextEditingController hourseinput = TextEditingController();
   final TextEditingController comm = TextEditingController();
 
@@ -136,7 +136,50 @@ class _HomeScreenShow extends State<HomeScreen> {
             ),
           ),
 
+          // выывод списка смен
           const SizedBox(height: 20),
+          Expanded(
+            child: StreamBuilder<List<WorkLog>>(
+              stream: firestore_serv.getWorkLogs(selectedday ?? DateTime.now()),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Ошибка загрузки данных'));
+                }
+
+                // кружок загрузки
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final shifts = snapshot.data ?? [];
+                if (shifts.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'Нет записей за этот день',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: shifts.length,
+                  itemBuilder: (context, index) {
+                    final shift = shifts[index];
+                    return ListTile(
+                      leading: const Icon(Icons.work),
+                      title: Text('${shift.hours} ч. работы'),
+                      subtitle: Text(shift.comment ?? 'Без комментария'),
+                      trailing: Text(
+                        'ID: ${shift.id.substring(0, 4)}...', // Показываем ID документа
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
