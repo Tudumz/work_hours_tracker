@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../services/firestore.dart';
-import '../models/work_log.dart';
 import 'dart:developer';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../BLoC/bloc.dart';
+import '../BLoC/event.dart';
+import '../BLoC/state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   State<HomeScreen> createState() => _HomeScreenShow();
 }
@@ -14,11 +16,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenShow extends State<HomeScreen> {
   DateTime today = DateTime.now();
   DateTime? selectedday = DateTime.now();
-  final FirestoreService firestore_serv = FirestoreService();
   final TextEditingController hourseinput = TextEditingController();
   final TextEditingController comm = TextEditingController();
 
-  void _showAddShiftDialog() {
+  @override
+  void AddDialog() {
     hourseinput.clear();
     comm.clear();
 
@@ -30,13 +32,11 @@ class _HomeScreenShow extends State<HomeScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // hours input
               TextField(
                 controller: hourseinput,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-
                 decoration: const InputDecoration(
                   labelText: 'Часы',
                   hintText: '8.5',
@@ -45,7 +45,6 @@ class _HomeScreenShow extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              // comment input
               TextField(
                 controller: comm,
                 decoration: const InputDecoration(
@@ -66,22 +65,18 @@ class _HomeScreenShow extends State<HomeScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (hourseinput.text.isEmpty) return;
-
                 final hours =
                     double.tryParse(hourseinput.text.replaceAll(',', '.')) ??
                     0.0;
-
-                try {
-                  if (selectedday != null) {
-                    await FirestoreService().addWorkLog(
-                      selectedday!,
-                      hours,
-                      comm.text,
-                    );
-                    log('Успешно сохранено в Firebase!');
-                  }
-                } catch (e) {
-                  log('Ошибка при сохранении в Firebase: $e');
+                if (selectedday != null) {
+                  context.read<WorkLogBloc>().add(
+                    AddWorkLog(
+                      date: selectedday!,
+                      hours: hours,
+                      comment: comm.text,
+                    ),
+                  );
+                  log('Успешно сохранено!');
                 }
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -112,7 +107,6 @@ class _HomeScreenShow extends State<HomeScreen> {
       body: Column(
         children: [
           TableCalendar(
-            // always
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
             focusedDay: today,
@@ -127,9 +121,9 @@ class _HomeScreenShow extends State<HomeScreen> {
                   selectedday = chosenday;
                   today = focusedDay;
                 });
+                context.read<WorkLogBloc>().add(LoadWorkLogs(chosenday));
               }
             },
-
             headerStyle: const HeaderStyle(
               formatButtonVisible: false,
               titleCentered: true,
@@ -139,51 +133,43 @@ class _HomeScreenShow extends State<HomeScreen> {
           // выывод списка смен
           const SizedBox(height: 20),
           Expanded(
-            child: StreamBuilder<List<WorkLog>>(
-              stream: firestore_serv.getWorkLogs(selectedday ?? DateTime.now()),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(child: Text('Ошибка загрузки данных'));
-                }
-
-                // кружок загрузки
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            child: BlocBuilder<WorkLogBloc, WorkLogState>(
+              builder: (context, state) {
+                if (state is WorkLogLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final shifts = snapshot.data ?? [];
-                if (shifts.isEmpty) {
-                  return const Center(
+                if (state is WorkLogError) {
+                  return Center(
                     child: Text(
-                      'Нет записей за этот день',
-                      style: TextStyle(color: Colors.grey),
+                      state.message,
+                      style: const TextStyle(color: Colors.red),
                     ),
                   );
                 }
-                return ListView.builder(
-                  itemCount: shifts.length,
-                  itemBuilder: (context, index) {
-                    final shift = shifts[index];
-                    return ListTile(
-                      leading: const Icon(Icons.work),
-                      title: Text('${shift.hours} ч. работы'),
-                      subtitle: Text(shift.comment ?? 'Без комментария'),
-                      trailing: Text(
-                        'ID: ${shift.id.substring(0, 4)}...', // Показываем ID документа
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    );
-                  },
-                );
+                if (state is WorkLogLoaded) {
+                  if (state.logs.isEmpty) {
+                    return const Center(child: Text('Нет записей'));
+                  }
+                  return ListView.builder(
+                    itemCount: state.logs.length,
+                    itemBuilder: (context, index) {
+                      final shift = state.logs[index];
+                      return ListTile(
+                        leading: const Icon(Icons.work, color: Colors.purple),
+                        title: Text('${shift.hours} ч.'),
+                        subtitle: Text(shift.comment ?? ''),
+                      );
+                    },
+                  );
+                }
+                return const SizedBox.shrink();
               },
             ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddShiftDialog,
+        onPressed: AddDialog,
         child: const Icon(Icons.add),
       ),
     );
