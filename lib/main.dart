@@ -10,23 +10,33 @@ import 'BLoC/bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Work Hourse Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Color.fromARGB(255, 48, 37, 62),
-        ),
-        useMaterial3: true,
-      ),
+    final firestoreService = FirestoreService();
 
-      home: const HomeScreen(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<WorkLogBloc>(
+          create: (context) => WorkLogBloc(firestoreService),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Work Tracker',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Color.fromARGB(255, 48, 37, 62),
+          ),
+          useMaterial3: true,
+        ),
+        home: const HomeScreen(),
+      ),
     );
   }
 }
