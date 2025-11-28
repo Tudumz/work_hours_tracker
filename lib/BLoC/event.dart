@@ -1,5 +1,6 @@
-import 'package:equatable/equatable.dart';
-import '../models/work_log.dart';
+//import 'package:equatable/equatable.dart';
+//import '../models/work_log.dart';
+part of 'bloc.dart';
 
 abstract class WorkLogEvent extends Equatable {
   const WorkLogEvent();

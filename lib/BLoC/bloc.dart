@@ -1,7 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../services/firestore.dart';
-import 'event.dart';
-import 'state.dart';
+import '../models/work_log.dart';
+import 'package:equatable/equatable.dart';
+
+part 'event.dart';
+part 'state.dart';
 
 class WorkLogBloc extends Bloc<WorkLogEvent, WorkLogState> {
   final FirestoreService _firestoreService;
@@ -12,7 +15,7 @@ class WorkLogBloc extends Bloc<WorkLogEvent, WorkLogState> {
       await emit.forEach(
         _firestoreService.getWorkLogs(event.date),
         onData: (logs) => WorkLogLoaded(logs),
-        onError: (_, __) => const WorkLogError('Ошибка загрузки данных'),
+        onError: (_, _) => const WorkLogError('Ошибка загрузки данных'),
       );
     });
 
