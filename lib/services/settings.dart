@@ -36,12 +36,12 @@ class SettingsService {
     await prefs.setDouble(lunchCost, cost);
   }
 
-  Future<void> setIsRateIncreased(bool value) async {
+  Future<void> setIsSalaryIncreased(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(checkIsSalaryIncreased, value);
   }
 
-  Future<bool> getIsRateIncreased() async {
+  Future<bool> getIsSalaryIncreased() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(checkIsSalaryIncreased) ?? false;
   }

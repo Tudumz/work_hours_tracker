@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:work_hours_tracker/views/settings_screen.dart';
 import 'firebase_options.dart';
 import 'views/home_screen.dart';
 

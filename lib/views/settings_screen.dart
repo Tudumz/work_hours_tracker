@@ -15,6 +15,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _limitController = TextEditingController();
   final TextEditingController _lunchDurationController =
       TextEditingController();
+  bool _salaryIncreased = false;
+  TimeOfDay? _nightStartTime;
 
   @override
   void initState() {
@@ -25,11 +27,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final rate = await _settingsService.getHourSalary();
     final lunch = await _settingsService.getLunchSettings();
-
+    final isSalaryIncreased = await _settingsService.getIsSalaryIncreased();
+    final nightTimeStart = await _settingsService.getnightTime();
     setState(() {
       _rateController.text = rate.toString();
       _lunchDurationController.text = lunch['duration'].toString();
+      _salaryIncreased = isSalaryIncreased;
+      if (nightTimeStart != null) {
+        final parts = nightTimeStart.split(':');
+        _nightStartTime = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      } else {
+        _nightStartTime = null;
+      }
     });
+  }
+
+  Future<void> _pickOvertimeTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _nightStartTime ?? const TimeOfDay(hour: 22, minute: 0),
+      initialEntryMode: TimePickerEntryMode.dial,
+    );
+    if (picked != null) {
+      setState(() {
+        _nightStartTime = picked;
+      });
+    }
   }
 
   Future<void> _saveSettings() async {
@@ -39,7 +65,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     await _settingsService.setHourSalary(rate);
     await _settingsService.setLunchSettings(lunchDur, 0);
-
+    await _settingsService.setIsSalaryIncreased(_salaryIncreased);
+    if (_salaryIncreased && _nightStartTime != null) {
+      final timeString =
+          '${_nightStartTime!.hour.toString().padLeft(2, '0')}:${_nightStartTime!.minute.toString().padLeft(2, '0')}';
+      await _settingsService.setnightTime(timeString);
+    } else {
+      await _settingsService.setnightTime(null);
+    }
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -79,6 +112,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: 'Длина обеда (минут)',
               ),
             ),
+
+            SwitchListTile(
+              title: const Text('Учитывать повышенную ставку'),
+              subtitle: const Text('Для ночных смен или переработки'),
+              value: _salaryIncreased,
+              onChanged: (bool value) {
+                setState(() {
+                  _salaryIncreased = value;
+                  if (!value) _nightStartTime = null;
+                });
+              },
+            ),
+            if (_salaryIncreased)
+              ListTile(
+                title: const Text('Начало повышенной ставки'),
+                subtitle: Text(
+                  _nightStartTime?.format(context) ?? 'Выберите время',
+                ),
+                trailing: const Icon(
+                  Icons.access_time,
+                  color: Color.fromARGB(255, 97, 11, 178),
+                ),
+                onTap: _pickOvertimeTime,
+              ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveSettings,
