@@ -83,4 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'my-wh-project-2025.firebaseapp.com',
     storageBucket: 'my-wh-project-2025.firebasestorage.app',
   );
+
 }
